@@ -1,0 +1,149 @@
+{
+  "tenants": [
+    {
+      "id": "tuitioncentre1",
+      "name": "Tuition Centre 1",
+      "domain": "tuitioncentre1.lms.com",
+      "plan": "Pro",
+      "brandColor": "#6366f1",
+      "maxOfflineMb": 500,
+      "supportEmail": "help@tuitioncentre1.lms.com"
+    },
+    {
+      "id": "tuitioncentre2",
+      "name": "Tuition Centre 2",
+      "domain": "tuitioncentre2.lms.com",
+      "plan": "Starter",
+      "brandColor": "#0ea5e9",
+      "maxOfflineMb": 200,
+      "supportEmail": "help@tuitioncentre2.lms.com"
+    }
+  ],
+  "courses": [
+    {
+      "id": "c-physics-12",
+      "tenantId": "tuitioncentre1",
+      "title": "Grade 12 Physics - Mechanics",
+      "subject": "Physics",
+      "teacher": "Mr. Ramesh Adhikari",
+      "description": "Newton's laws, work, energy and momentum for the Grade 12 board exam.",
+      "lessons": [
+        {
+          "id": "l-newton-laws",
+          "title": "Newton's Laws of Motion",
+          "topic": "Mechanics",
+          "durationSec": 596,
+          "youtubeUrl": "https://www.youtube.com/watch?v=M7lc1UVf-VE",
+          "sourceUrl": "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_5MB.mp4"
+        },
+        {
+          "id": "l-inertia-demo",
+          "title": "Inertia - Live Classroom Demo",
+          "topic": "Mechanics",
+          "durationSec": 228,
+          "youtubeUrl": "https://youtu.be/aqz-KE-bpKQ",
+          "sourceUrl": "https://test-videos.co.uk/vids/jellyfish/mp4/h264/360/Jellyfish_360_10s_2MB.mp4"
+        },
+        {
+          "id": "l-work-energy",
+          "title": "Work, Energy and Power",
+          "topic": "Energy",
+          "durationSec": 842,
+          "youtubeUrl": "https://www.youtube.com/watch?v=jNQXAC9IVRw"
+        },
+        {
+          "id": "l-momentum-pyq",
+          "title": "Momentum - Previous Year Questions",
+          "topic": "Mechanics",
+          "durationSec": 1520,
+          "youtubeUrl": "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
+          "sourceUrl": "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_30MB.mp4"
+        }
+      ]
+    },
+    {
+      "id": "c-chemistry-12",
+      "tenantId": "tuitioncentre1",
+      "title": "Grade 12 Chemistry - Organic Basics",
+      "subject": "Chemistry",
+      "teacher": "Ms. Sunita Karki",
+      "description": "Hybridisation, isomerism and reaction mechanisms explained with board-style problems.",
+      "lessons": [
+        {
+          "id": "l-hybridisation",
+          "title": "Hybridisation Made Simple",
+          "topic": "Bonding",
+          "durationSec": 725,
+          "youtubeUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+          "sourceUrl": "https://mdn.github.io/shared-assets/videos/flower.mp4"
+        },
+        {
+          "id": "l-isomerism",
+          "title": "Isomerism - Chain, Position, Functional",
+          "topic": "Organic",
+          "durationSec": 1103,
+          "youtubeUrl": "https://www.youtube.com/watch?v=kXYiU_JCYtU",
+          "sourceUrl": "https://test-videos.co.uk/vids/sintel/mp4/h264/360/Sintel_360_10s_5MB.mp4"
+        },
+        {
+          "id": "l-mechanisms",
+          "title": "Reaction Mechanisms (SN1 / SN2)",
+          "topic": "Organic",
+          "durationSec": 968,
+          "youtubeUrl": "https://www.youtube.com/watch?v=M7lc1UVf-VE"
+        }
+      ]
+    },
+    {
+      "id": "c-maths-11",
+      "tenantId": "tuitioncentre1",
+      "title": "Grade 11 Maths - Calculus Starter",
+      "subject": "Maths",
+      "teacher": "Mr. Bikash Shrestha",
+      "description": "Limits, derivatives and the first rules, from scratch.",
+      "lessons": [
+        {
+          "id": "l-limits",
+          "title": "Limits - The Intuition First",
+          "topic": "Limits",
+          "durationSec": 654,
+          "youtubeUrl": "https://www.youtube.com/watch?v=kXYiU_JCYtU",
+          "sourceUrl": "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_2MB.mp4"
+        },
+        {
+          "id": "l-derivative-rules",
+          "title": "Derivative Rules Cheat-Sheet",
+          "topic": "Derivatives",
+          "durationSec": 488,
+          "youtubeUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+          "sourceUrl": "https://mdn.github.io/shared-assets/videos/friday.mp4"
+        }
+      ]
+    },
+    {
+      "id": "c-bio-11",
+      "tenantId": "tuitioncentre2",
+      "title": "Grade 11 Biology - Cell Structure",
+      "subject": "Biology",
+      "teacher": "Dr. Anjana Gurung",
+      "description": "Cell organelles and their functions, with diagrams you can redraw in the exam.",
+      "lessons": [
+        {
+          "id": "l-cell-basics",
+          "title": "The Cell - Basics",
+          "topic": "Cytology",
+          "durationSec": 540,
+          "youtubeUrl": "https://www.youtube.com/watch?v=jNQXAC9IVRw",
+          "sourceUrl": "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_10MB.mp4"
+        },
+        {
+          "id": "l-cell-stream",
+          "title": "Organelles - Streamed Doubt Class",
+          "topic": "Cytology",
+          "durationSec": 431,
+          "youtubeUrl": "https://www.youtube.com/watch?v=aqz-KE-bpKQ"
+        }
+      ]
+    }
+  ]
+}
