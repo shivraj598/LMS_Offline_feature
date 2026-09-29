@@ -8,16 +8,18 @@ import { DownloadsPage } from './pages/DownloadsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { DashboardPage } from './pages/DashboardPage'
 
-function AppRoutes() {
+export function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<DashboardPage />} />
-      <Route path="/courses" element={<CoursesPage />} />
-      <Route path="/courses/:courseId" element={<CoursePage />} />
-      <Route path="/watch/:courseId/:lessonId" element={<WatchPage />} />
-      <Route path="/downloads" element={<DownloadsPage />} />
-      <Route path="/settings" element={<SettingsPage />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route element={<AppLayout />}>
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/courses" element={<CoursesPage />} />
+        <Route path="/courses/:courseId" element={<CoursePage />} />
+        <Route path="/watch/:courseId/:lessonId" element={<WatchPage />} />
+        <Route path="/downloads" element={<DownloadsPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
     </Routes>
   )
 }
@@ -26,9 +28,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AppProvider>
-        <AppLayout>
-          <AppRoutes />
-        </AppLayout>
+        <AppRoutes />
       </AppProvider>
     </BrowserRouter>
   )
