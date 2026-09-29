@@ -19,6 +19,8 @@ import {
   ChevronDown,
   CheckCircle2,
   ArrowRight,
+  Shield,
+  CloudOff,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
