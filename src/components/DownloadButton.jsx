@@ -90,7 +90,7 @@ export function DownloadButton({ lesson, course, compact = false }) {
             {job.totalBytes ? ` of ${formatBytes(job.totalBytes)}` : ''}
           </span>
         </div>
-        <button type="button" className="btn btn-primary btn-xs" onClick={resume} disabled={offline}>
+        <button type="button" className="btn btn-primary btn-xs" onClick={() => resumeJob(job.key)} disabled={offline}>
           {offline ? 'Waiting for internet' : 'Resume'}
         </button>
         <button
@@ -112,7 +112,7 @@ export function DownloadButton({ lesson, course, compact = false }) {
         Failed
       </span>
       {job.retryable === false ? null : (
-        <button type="button" className="btn btn-primary btn-xs" onClick={resume} disabled={offline}>
+        <button type="button" className="btn btn-primary btn-xs" onClick={() => resumeJob(job.key)} disabled={offline}>
           Retry
         </button>
       )}
