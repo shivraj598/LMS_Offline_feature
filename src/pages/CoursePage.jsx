@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { useParams, Link, Outlet } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { useApp, courseOfflineSummary } from '../state/AppContext'
+import { JOB_STATUS } from '../lib/downloadManager'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -19,9 +20,9 @@ import {
   Zap,
   CloudOff,
   MoreHorizontal,
+  Shield,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu'
 
 const subjectColors = {
@@ -34,25 +35,21 @@ const subjectColors = {
 
 function LessonRow({ lesson, course, index, isActive, onClick }) {
   const { jobFor } = useApp()
-  const { JOB_STATUS } = require('../lib/downloadManager')
   const job = jobFor(lesson)
   const downloaded = job?.status === JOB_STATUS.DOWNLOADED
   const colors = subjectColors[lesson.topic] || subjectColors.default
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            onClick={() => onClick(lesson)}
-            className={cn(
-              "w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200",
-              "hover:bg-surface-hover hover:border-primary/30 border border-transparent",
-              downloaded && "bg-green-50 border-green-100",
-              isActive && "bg-primary/5 border-primary/20",
-              "group"
-            )}
-          >
+    <div
+      onClick={() => onClick(lesson)}
+      className={cn(
+        "w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 cursor-pointer",
+        "hover:bg-surface-hover hover:border-primary/30 border border-transparent",
+        downloaded && "bg-green-50 border-green-100",
+        isActive && "bg-primary/5 border-primary/20",
+        "group"
+      )}
+    >
             <div className={cn(
               "relative h-16 w-28 shrink-0 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0",
               downloaded && "bg-green-50"
@@ -99,70 +96,60 @@ function LessonRow({ lesson, course, index, isActive, onClick }) {
                     {formatBytes(job.receivedBytes)}
                   </span>
                 )}
-                {!downloaded && lesson.sourceUrl && (
+                {!downloaded && (lesson.sourceUrl || lesson.youtubeUrl) && (
                   <span className="flex items-center gap-1 text-blue-600">
                     <CloudOff className="h-3 w-3" />
                     Downloadable
                   </span>
                 )}
-                {!downloaded && !lesson.sourceUrl && (
+                {!downloaded && !lesson.sourceUrl && !lesson.youtubeUrl && (
                   <span className="flex items-center gap-1">
                     <Play className="h-3 w-3" />
-                    Streaming Only
+                    No video attached
                   </span>
                 )}
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem asChild>
-                        <Link to={`/watch/${course.id}/${lesson.id}`}>
-                          <Play className="h-4 w-4 mr-2" />
-                          Watch Lesson
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      {!downloaded && lesson.sourceUrl && (
-                        <DropdownMenuItem className="text-primary focus:text-primary" onClick={() => {}}>
-                          <Download className="h-4 w-4 mr-2" />
-                          Download for Offline
-                        </DropdownMenuItem>
-                      )}
-                      {downloaded && (
-                        <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => {}}>
-                          <CloudOff className="h-4 w-4 mr-2" />
-                          Remove Download
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                        <Link to={`/watch/${course.id}/${lesson.id}`} target="_blank">
-                          <Zap className="h-4 w-4 mr-2" />
-                          Open on YouTube
-                        </Link>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  <p>More options</p>
-                </TooltipContent>
-              </Tooltip>
+            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity" aria-label="Lesson options">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                  <DropdownMenuItem asChild>
+                    <Link to={`/watch/${course.id}/${lesson.id}`}>
+                      <Play className="h-4 w-4 mr-2" />
+                      Watch Lesson
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  {!downloaded && (lesson.sourceUrl || lesson.youtubeUrl) && (
+                    <DropdownMenuItem className="text-primary focus:text-primary">
+                      <Download className="h-4 w-4 mr-2" />
+                      Download for Offline
+                    </DropdownMenuItem>
+                  )}
+                  {downloaded && (
+                    <DropdownMenuItem className="text-destructive focus:text-destructive">
+                      <CloudOff className="h-4 w-4 mr-2" />
+                      Remove Download
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to={`/watch/${course.id}/${lesson.id}`}>
+                      <Zap className="h-4 w-4 mr-2" />
+                      Open Lesson
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-          </button>
-        </Tooltip>
-      </TooltipProvider>
-    )
+    </div>
   )
 }
 
