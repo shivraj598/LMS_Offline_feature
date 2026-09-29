@@ -17,6 +17,7 @@ import {
   Zap,
   Shield,
   CloudOff,
+  HelpCircle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
