@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useApp, statusLabel } from '../state/AppContext'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
@@ -25,15 +25,13 @@ import {
   RotateCcw,
   Trash2,
   ExternalLink,
-  Volume2,
-  VolumeX,
   Maximize,
   Minimize,
-  Settings,
   Info,
   AlertTriangle,
   CloudOff,
   Wifi,
+  Clock,
 } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu'
@@ -331,7 +329,8 @@ export function WatchPage() {
                             </TooltipTrigger>
                             <TooltipContent>
                               <p>Remove from this device</p>
-                            </TooltipContent                          </Tooltip>
+                            </TooltipContent>
+                          </Tooltip>
                         </TooltipProvider>
                       )}
 
@@ -454,16 +453,16 @@ export function WatchPage() {
               </div>
             )}
 
-            {!lesson.sourceUrl && !downloaded && (
+            {!lesson.sourceUrl && !lesson.youtubeUrl && !downloaded && (
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
                 <div className="flex items-start gap-3">
                   <div className="h-10 w-10 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0">
                     <Info className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="font-medium text-amber-800">Streaming Only</p>
+                    <p className="font-medium text-amber-800">No Video Attached</p>
                     <p className="text-sm text-amber-700 mt-1">
-                      This lesson only has a YouTube link. Ask your tuition centre to attach the video file to enable offline downloads.
+                      This lesson has no video yet. Ask your tuition centre to add a YouTube link or video file.
                     </p>
                   </div>
                 </div>
@@ -539,7 +538,7 @@ export function WatchPage() {
                   )}
 
                   <div className="flex gap-2 pt-2">
-                    {!downloaded && lesson.sourceUrl && (
+                    {!downloaded && (lesson.sourceUrl || lesson.youtubeUrl) && (
                       <Button onClick={handleDownload} className="flex-1" disabled={offline}>
                         <Download className="h-4 w-4 mr-2" />
                         Download for Offline
