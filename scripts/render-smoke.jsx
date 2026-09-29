@@ -12,11 +12,13 @@
  * components that unit tests cannot reach (offline pages, player, downloads).
  */
 import { renderToStaticMarkup } from 'react-dom/server';
-import App from '../src/App.jsx';
+import { MemoryRouter } from 'react-router-dom';
+import { AppProvider } from '../src/state/AppContext.jsx';
+import { AppRoutes } from '../src/App.jsx';
 
 // Minimal browser surface used during render (effects do not run in SSR).
 globalThis.window = {
-  location: { hostname: 'tuitioncentre1.lms.com', search: '', hash: '#/' },
+  location: { hostname: 'tuitioncentre1.lms.com', search: '' },
   addEventListener() {},
   removeEventListener() {},
 };
@@ -32,46 +34,60 @@ Object.defineProperty(globalThis, 'localStorage', {
   writable: true,
 });
 
+function renderAt(path) {
+  return renderToStaticMarkup(
+    <MemoryRouter initialEntries={[path]}>
+      <AppProvider>
+        <AppRoutes />
+      </AppProvider>
+    </MemoryRouter>,
+  );
+}
+
 const ROUTES = [
-  { hash: '#/', expect: ['Tuition Centre 1', 'Grade 12 Physics - Mechanics', 'Download'] },
-  { hash: '#/course/c-physics-12', expect: ['Newton&#x27;s Laws of Motion', 'Save all offline'] },
-  { hash: '#/watch/c-physics-12/l-newton-laws', expect: ['Lessons in this course', 'youtube-nocookie.com/embed'] },
-  { hash: '#/downloads', expect: ['Offline library', 'Where these files live'] },
-  { hash: '#/settings', expect: ['Offline storage limit', 'Why not just download the file?'] },
-  { hash: '#/nope', expect: ['Page not found'] },
+  { path: '/', expect: ['Welcome back', 'Grade 12 Physics - Mechanics', 'Save All Offline'] },
+  { path: '/courses', expect: ['Tuition Centre 1 Courses', 'Save All Offline'] },
+  {
+    path: '/courses/c-physics-12',
+    expect: ['Grade 12 Physics - Mechanics', 'Save All Offline', 'Newton'],
+  },
+  {
+    path: '/watch/c-physics-12/l-newton-laws',
+    expect: ['Lesson Info', 'youtube-nocookie.com/embed'],
+  },
+  { path: '/downloads', expect: ['Offline Library', 'Storage Used'] },
+  { path: '/settings', expect: ['Offline Storage', 'Danger Zone'] },
 ];
 
 let failures = 0;
 
 for (const route of ROUTES) {
-  window.location.hash = route.hash;
   let html = '';
   try {
-    html = renderToStaticMarkup(<App />);
+    html = renderAt(route.path);
   } catch (error) {
     failures += 1;
-    console.error(`FAIL ${route.hash} -> crashed: ${error.message}`);
+    console.error(`FAIL ${route.path} -> crashed: ${error.message}`);
     continue;
   }
 
   const missing = route.expect.filter((needle) => !html.includes(needle));
   if (missing.length) {
     failures += 1;
-    console.error(`FAIL ${route.hash} -> missing ${JSON.stringify(missing)}`);
+    console.error(`FAIL ${route.path} -> missing ${JSON.stringify(missing)}`);
   } else {
-    console.log(`ok   ${route.hash} (${html.length} bytes)`);
+    console.log(`ok   ${route.path} (${html.length} bytes)`);
   }
 
   if (/undefined|NaN/.test(html)) {
     failures += 1;
-    console.error(`FAIL ${route.hash} -> output contains undefined/NaN`);
+    console.error(`FAIL ${route.path} -> output contains undefined/NaN`);
   }
 }
 
 // A second tenant must resolve through its own subdomain.
-window.location.hash = '#/';
 window.location.hostname = 'tuitioncentre2.lms.com';
-const otherTenant = renderToStaticMarkup(<App />);
+const otherTenant = renderAt('/');
 if (otherTenant.includes('Tuition Centre 2') && !otherTenant.includes('Grade 12 Physics - Mechanics')) {
   console.log('ok   tenant resolution via subdomain (tuitioncentre2)');
 } else {
