@@ -1,6 +1,10 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // The LMS backend (server/index.js) resolves download sources and proxies media.
 const API_TARGET = process.env.LMS_API_URL || 'http://localhost:8787';
@@ -60,5 +64,10 @@ export default defineConfig({
   build: {
     sourcemap: true,
     chunkSizeWarningLimit: 900,
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+    },
   },
 });
