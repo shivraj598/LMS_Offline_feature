@@ -8,9 +8,15 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
+import { toast } from 'sonner';
 import * as downloads from '../lib/downloadManager.js';
 import { JOB_STATUS } from '../lib/downloadManager.js';
-import { getTenant, listCourses, resolveTenantFromLocation } from '../data/catalog.js';
+import { getTenant, resolveTenantFromLocation } from '../data/catalog.js';
+import {
+  listCoursesWithOverrides,
+  addLessonFromYoutube,
+  createCourse,
+} from '../lib/lessonStore.js';
 import { isForcedOffline, setForcedOffline } from '../lib/net.js';
 import { refreshStorage, requestPersistentStorage } from '../lib/storage.js';
 import { useOffline } from '../hooks/useOnline.js';
@@ -21,7 +27,14 @@ export function AppProvider({ children }) {
   const origin = useMemo(() => resolveTenantFromLocation(), []);
   const tenantId = origin.tenantId;
   const tenant = useMemo(() => getTenant(tenantId), [tenantId]);
-  const courses = useMemo(() => listCourses(tenantId), [tenantId]);
+  // Bundled catalog + the lessons/courses the owner added in Owner Studio.
+  const [ownerVersion, setOwnerVersion] = useState(0);
+  const courses = useMemo(
+    () => listCoursesWithOverrides(tenantId),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tenantId, ownerVersion],
+  );
+  const refreshCourses = useCallback(() => setOwnerVersion((value) => value + 1), []);
 
   const snapshot = useSyncExternalStore(
     downloads.subscribe,
@@ -39,6 +52,14 @@ export function AppProvider({ children }) {
     const id = noticeSeq.current;
     setNotices((current) => [...current, { id, ...notice }]);
     const timeout = notice.timeout ?? 7000;
+    // Surface in the toast stack as well — the in-page notice list is not
+    // mounted on every route, and feedback the user never sees is a bug.
+    const body = notice.message || '';
+    const options = { duration: timeout > 0 ? timeout : Infinity, id: `notice-${id}` };
+    if (notice.tone === 'error') toast.error(body, options);
+    else if (notice.tone === 'warn') toast.warning(body, options);
+    else if (notice.tone === 'done') toast.success(body, options);
+    else toast.info(body, options);
     if (timeout > 0) {
       setTimeout(() => setNotices((current) => current.filter((item) => item.id !== id)), timeout);
     }
@@ -168,6 +189,40 @@ export function AppProvider({ children }) {
     return results;
   }, [pushNotice]);
 
+  /** Owner Studio: paste a YouTube URL -> a lesson students can watch right away. */
+  const addLesson = useCallback(
+    async (courseId, input) => {
+      const result = await addLessonFromYoutube(tenantId, courseId, input);
+      if (result.ok) {
+        refreshCourses();
+        toast.success(
+          result.downloadable === false
+            ? `"${result.lesson.title}" added. Students can stream it now; offline saving turns on once the centre's video file is attached.`
+            : `"${result.lesson.title}" added to the course.`,
+        );
+      } else {
+        toast.error(result.message || 'The lesson could not be added.');
+      }
+      return result;
+    },
+    [tenantId, refreshCourses],
+  );
+
+  /** Owner Studio: create an empty course to attach lessons to. */
+  const createOwnerCourse = useCallback(
+    (input) => {
+      const result = createCourse(tenantId, input);
+      if (result.ok) {
+        refreshCourses();
+        toast.success(`Course "${result.course.title}" created. Add its first lesson below.`);
+      } else {
+        toast.error(result.message || 'The course could not be created.');
+      }
+      return result;
+    },
+    [tenantId, refreshCourses],
+  );
+
   const askPersistentStorage = useCallback(async () => {
     const granted = await requestPersistentStorage();
     pushNotice({
@@ -184,6 +239,8 @@ export function AppProvider({ children }) {
       tenantId,
       tenant,
       courses,
+      addLesson,
+      createOwnerCourse,
       hostname: origin.hostname,
       offline,
       simulateOffline,
@@ -204,6 +261,8 @@ export function AppProvider({ children }) {
       tenantId,
       tenant,
       courses,
+      addLesson,
+      createOwnerCourse,
       origin.hostname,
       offline,
       simulateOffline,
