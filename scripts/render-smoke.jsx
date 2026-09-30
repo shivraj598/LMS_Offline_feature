@@ -57,6 +57,10 @@ const ROUTES = [
   },
   { path: '/downloads', expect: ['Offline Library', 'Storage Used'] },
   { path: '/settings', expect: ['Offline Storage', 'Danger Zone'] },
+  {
+    path: '/owner',
+    expect: ['Owner Studio', 'Upload to YouTube', 'Add a lesson from a YouTube link'],
+  },
 ];
 
 let failures = 0;
