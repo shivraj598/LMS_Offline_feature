@@ -7,6 +7,7 @@ import { WatchPage } from './pages/WatchPage'
 import { DownloadsPage } from './pages/DownloadsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { OwnerStudioPage } from './pages/OwnerStudioPage'
 
 export function AppRoutes() {
   return (
@@ -18,6 +19,7 @@ export function AppRoutes() {
         <Route path="/watch/:courseId/:lessonId" element={<WatchPage />} />
         <Route path="/downloads" element={<DownloadsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/owner" element={<OwnerStudioPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
