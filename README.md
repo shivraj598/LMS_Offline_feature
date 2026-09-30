@@ -29,7 +29,7 @@ Other scripts:
 | --- | --- |
 | `npm run dev:all` | API + web dev server together |
 | `npm run dev` / `npm run dev:server` | just one of them |
-| `npm test` | 33 unit + integration tests (`node:test`) |
+| `npm test` | 40 unit + integration tests (`node:test`) |
 | `npm run test:render` | renders every route with `react-dom/server` (smoke test) |
 | `npm run test:all` | both of the above |
 | `npm run build` / `npm run preview` | production build (service worker, offline app shell) |
@@ -62,6 +62,30 @@ For a real subdomain test, add a hosts entry and open the tenant domain:
    last whole chunk and finishes with **Resume**.
 7. Settings → set **My limit** to 50 MB, then try the 30 MB lesson: it is refused
    *before* any bytes move, with an explanation.
+8. Open **Owner Studio** → paste a YouTube URL from the centre's own channel →
+   the lesson appears in the course immediately for students to stream.
+
+---
+
+## 1b. The owner workflow (upload → paste → watch → save offline)
+
+```
+tuition centre uploads lecture to YouTube (unlisted is fine)
+        │
+        ▼  paste the URL in Owner Studio (/owner)
+lesson is created and shows up in the course for students — instantly
+        │
+        ├─ students watch it online in the YouTube embed
+        └─ students press Download → the lesson's file is fetched in chunks
+           into app-private storage and plays with no internet
+```
+
+The paste step always works for streaming. Whether the **offline** half engages
+is decided by the API's `/source` answer for that lesson: a video file the
+centre owns, or their own YouTube upload resolved server-side with yt-dlp
+(`ENABLE_YTDLP=1`). The Owner Studio inventory marks every lesson
+`downloadable` or `stream-only` so owners see exactly what their students can
+save.
 
 ---
 
@@ -179,13 +203,17 @@ The demo catalog points `sourceUrl` at small public test clips
 | --- | --- |
 | `GET /api/health` | liveness + which hosts/tenants the API knows |
 | `GET /api/tenant/:tenantId/catalog` | that tenant's courses (parity with the bundled catalog) |
+| `POST /api/tenant/:tenantId/courses/:courseId/lessons` | **owner workflow**: turn a pasted YouTube URL into a lesson (validated, deduped, reports `downloadable`) |
 | `GET /api/tenant/:tenantId/lessons/:lessonId/source` | **the download contract**: entitlement check, sign/serve a downloadable URL |
 | `GET /api/media/proxy?url=…` | byte-range streaming proxy (adds CORS + `accept-ranges`, forwards `Range`/206) |
 | `HEAD /api/media/proxy?url=…` | size probe |
 
 Env knobs: `PORT`, `HOST`, `ENABLE_YTDLP`, `YTDLP_PATH`,
 `ALLOWED_MEDIA_HOSTS=cdn.example.com,…` (host allow-list for the proxy — empty
-means "allow anything", which is fine locally and **must be set in production**).
+means "allow anything", which is fine locally and **must be set in production**),
+and `LMS_CATALOG_WRITABLE=1` (let owner-added lessons persist into
+`shared/catalog.json`; off by default, so deployments with a read-only catalog
+still accept the request and report what they can do).
 
 ---
 
@@ -199,18 +227,21 @@ src/lib/
   chunkPlan.js               pure chunk/range/resume maths (unit tested)
   downloadManager.js         queue, chunked Range downloads, pause/resume, budget
   sourceResolver.js          lesson -> downloadable URL (API, then asset fallback)
+  lessonStore.js             owner-added lessons/courses, merged over the catalog
   media.js                   chunks -> blob URL, offline poster-frame capture
   storage.js                 quota estimate, persist(), cap/budget checks
   net.js                     offline-aware fetch + simulated-offline switch
   youtube.js  router.js  format.js     small pure helpers
 src/components/              Header, LessonRow, DownloadButton, DownloadedBadge,
                              LessonPlayer, DownloadTray, StorageMeter, Notices, …
-src/pages/                   Courses, Course, Watch, Downloads, Settings
+src/pages/                   Courses, Course, Watch, Downloads, Settings,
+                             OwnerStudio (paste YouTube URL -> lesson)
 src/state/AppContext.jsx     tenant + catalog + one download store for the app
 server/index.js              the LMS API (entitlement, source resolution, Range proxy)
 scripts/dev-all.mjs          run API + Vite together with prefixed logs
 scripts/render-smoke.jsx     renders every route in Node (SSR smoke test)
-tests/                       unit tests, integration test, fake-indexeddb shim
+tests/                       unit tests, integration test, fake-indexeddb shim,
+                             owner add-lesson API contract tests
 ```
 
 ---
