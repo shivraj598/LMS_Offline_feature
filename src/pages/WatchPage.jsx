@@ -11,7 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { formatBytes, formatDuration } from '../lib/format'
 import { getOfflinePlaybackUrl } from '../lib/media'
 import { youtubeEmbedUrl, youtubeWatchUrl } from '../lib/youtube'
-import { JOB_STATUS, keyForLesson } from '../lib/downloadManager'
+import { JOB_STATUS, keyForLesson, pause, resume } from '../lib/downloadManager'
 import { cn } from '@/lib/utils'
 import {
   ArrowLeft,
@@ -107,6 +107,25 @@ export function WatchPage() {
     await removeDownload(job.key, job.title)
   }
 
+  const handlePause = () => {
+    if (job?.key) pause(job.key)
+  }
+
+  const handleResume = () => {
+    if (job?.key) resume(job.key)
+  }
+
+  const handleRetry = async () => {
+    if (!job) {
+      await handleDownload()
+      return
+    }
+    // Retry restarts from committed chunks; removing the failed job first
+    // lets enqueue treat it as fresh (error jobs are not "active").
+    if (job.status === JOB_STATUS.ERROR) await removeDownload(job.key, job.title)
+    await handleDownload()
+  }
+
   const toggleFullscreen = () => {
     if (videoRef.current) {
       if (!isFullscreen) {
@@ -181,7 +200,7 @@ export function WatchPage() {
                         <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-amber-400" />
                         <p className="text-lg font-medium">Download Incomplete</p>
                         <p className="text-sm text-gray-400 mt-1">Tap resume to repair this download</p>
-                        <Button className="mt-4" variant="outline" onClick={() => {}}>
+                        <Button className="mt-4" variant="outline" onClick={handleResume}>
                           <RotateCcw className="h-4 w-4 mr-2" />
                           Resume Download
                         </Button>
@@ -396,13 +415,13 @@ export function WatchPage() {
                     )}
                   </div>
                   {job.status === JOB_STATUS.DOWNLOADING && (
-                    <Button variant="ghost" size="sm" className="mt-3 w-full" onClick={() => {}}>
+                    <Button variant="ghost" size="sm" className="mt-3 w-full" onClick={handlePause}>
                       <X className="h-4 w-4 mr-2" />
                       Pause Download
                     </Button>
                   )}
                   {job.status === JOB_STATUS.PAUSED && (
-                    <Button variant="default" size="sm" className="mt-3 w-full" onClick={() => {}}>
+                    <Button variant="default" size="sm" className="mt-3 w-full" onClick={handleResume}>
                       <RotateCcw className="h-4 w-4 mr-2" />
                       Resume Download
                     </Button>
@@ -421,7 +440,7 @@ export function WatchPage() {
                       <p className="text-sm text-foreground-muted mt-1">{job.error}</p>
                       <div className="flex gap-2 mt-3">
                         {job.retryable !== false && (
-                          <Button variant="default" size="sm" onClick={() => {}}>
+                          <Button variant="default" size="sm" onClick={handleRetry}>
                             <RotateCcw className="h-4 w-4 mr-2" />
                             Retry Download
                           </Button>
