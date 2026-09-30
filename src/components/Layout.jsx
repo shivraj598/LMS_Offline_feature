@@ -30,6 +30,7 @@ import {
   Shield,
   HelpCircle,
   ChevronDown,
+  Clapperboard,
 } from 'lucide-react'
 import { useApp } from '@/state/AppContext'
 import { formatBytes } from '@/lib/format'
@@ -42,6 +43,7 @@ const navigation = [
   { name: 'My Courses', href: '/courses', icon: BookOpen },
   { name: 'Downloads', href: '/downloads', icon: Download },
   { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Owner Studio', href: '/owner', icon: Clapperboard },
 ]
 
 const accountNav = [
