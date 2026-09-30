@@ -25,6 +25,28 @@ import { Readable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
+/** Minimal YouTube id extraction for server-side validation (same rules as src/lib/youtube.js). */
+function parseYouTubeId(input) {
+  const value = String(input || '').trim();
+  if (/^[A-Za-z0-9_-]{11}$/.test(value)) return value;
+  try {
+    const url = new URL(value.startsWith('http') ? value : `https://${value}`);
+    const host = url.hostname.replace(/^www\./, '').replace(/^m\./, '');
+    const parts = url.pathname.split('/').filter(Boolean);
+    if (host === 'youtu.be') return parts[0] && /^[A-Za-z0-9_-]{11}$/.test(parts[0]) ? parts[0] : null;
+    if (host.endsWith('youtube.com') || host.endsWith('youtube-nocookie.com')) {
+      const v = url.searchParams.get('v');
+      if (v && /^[A-Za-z0-9_-]{11}$/.test(v)) return v;
+      if (['embed', 'v', 'shorts', 'live'].includes(parts[0])) {
+        return parts[1] && /^[A-Za-z0-9_-]{11}$/.test(parts[1]) ? parts[1] : null;
+      }
+    }
+  } catch {
+    /* fall through */
+  }
+  return null;
+}
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CATALOG_PATH = path.join(__dirname, '..', 'shared', 'catalog.json');
 const PORT = Number(process.env.PORT || 8787);
@@ -37,7 +59,46 @@ const YTDLP = process.env.YTDLP_PATH || 'yt-dlp';
 const YTDLP_ENABLED = process.env.ENABLE_YTDLP !== '0'; // enabled by default
 const SIGNED_URL_TTL_MS = 30 * 60 * 1000;
 
+// When set, owner actions (adding lessons) persist into shared/catalog.json.
+// Off by default so a read-only deployment (containers, CDN-served catalogs)
+// still accepts the request and answers with what it can do.
+const CATALOG_WRITABLE = process.env.LMS_CATALOG_WRITABLE === '1';
+
 const readCatalog = () => JSON.parse(fs.readFileSync(CATALOG_PATH, 'utf8'));
+
+function slugify(value) {
+  return (
+    String(value || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 40) || 'lesson'
+  );
+}
+
+/**
+ * Can this lesson ever be saved offline?
+ *  - a direct file the tenant owns (their asset store / CDN)  -> yes
+ *  - their own YouTube upload, with yt-dlp enabled server-side -> yes
+ *  - otherwise it is streaming-only: a browser cannot save YouTube's stream.
+ */
+function lessonDownloadability(lesson) {
+  if (lesson.sourceUrl) return true;
+  if (lesson.youtubeUrl && YTDLP_ENABLED) return true;
+  return false;
+}
+
+/** Append a lesson to shared/catalog.json (only when persistence is enabled). */
+function appendLessonToCatalog(course, lesson) {
+  const raw = fs.readFileSync(CATALOG_PATH, 'utf8');
+  const catalog = JSON.parse(raw);
+  const target = catalog.courses.find((item) => item.id === course.id);
+  if (!target) throw new Error('course vanished');
+  target.lessons.push(lesson);
+  const tmpPath = `${CATALOG_PATH}.tmp`;
+  fs.writeFileSync(tmpPath, `${JSON.stringify(catalog, null, 2)}\n`);
+  fs.renameSync(tmpPath, CATALOG_PATH);
+}
 
 function findLesson(tenantId, lessonId) {
   for (const course of readCatalog().courses) {
@@ -93,6 +154,77 @@ const app = express();
 
 // In production, restrict this to the tenant domains (*.lms.com) instead of "*".
 app.use(cors({ origin: true, exposedHeaders: ['content-range', 'content-length', 'accept-ranges'] }));
+app.use(express.json({ limit: '64kb' }));
+
+/**
+ * Owner workflow: "I uploaded the lecture to YouTube, here is the URL."
+ * The browser (Owner Studio) created the lesson locally so students see it
+ * instantly; this endpoint is the server's record of it, and reports whether
+ * the lesson is downloadable (the centre's own file, or yt-dlp enabled).
+ *
+ * Real deployments: replace the JSON append with your database write and add
+ * owner authentication — the shape of the contract stays the same.
+ */
+app.post('/api/tenant/:tenantId/courses/:courseId/lessons', async (req, res) => {
+  const { tenantId, courseId } = req.params;
+  const tenant = findTenant(tenantId);
+  if (!tenant) return res.status(404).json({ error: 'unknown tenant' });
+
+  const courseRow = readCatalog().courses.find((item) => item.tenantId === tenantId && item.id === courseId);
+  if (!courseRow) return res.status(404).json({ error: 'unknown course for this tenant' });
+
+  const body = req.body || {};
+  const youtubeUrl = String(body.youtubeUrl || '').trim();
+  if (!youtubeUrl) {
+    return res.status(400).json({ error: 'youtubeUrl is required.' });
+  }
+  if (!/^https:\/\/(www\.|m\.)?(youtube\.com|youtu\.be)\//.test(youtubeUrl)) {
+    return res.status(400).json({ error: 'Only YouTube URLs are accepted here.' });
+  }
+
+  const videoId = parseYouTubeId(youtubeUrl);
+  if (!videoId) return res.status(400).json({ error: 'Could not read a video id from that URL.' });
+
+  if (courseRow.lessons.some((item) => parseYouTubeId(item.youtubeUrl) === videoId)) {
+    return res.status(409).json({ error: 'This video is already a lesson in this course.' });
+  }
+
+  const lesson = {
+    id: String(body.id || `l-${slugify(body.title || 'lesson')}-${videoId.slice(0, 4).toLowerCase()}`),
+    title: String(body.title || `Lesson ${courseRow.lessons.length + 1}`).slice(0, 120),
+    topic: String(body.topic || '').slice(0, 60),
+    durationSec: Number.isFinite(body.durationSec) ? body.durationSec : 0,
+    youtubeUrl: `https://www.youtube.com/watch?v=${videoId}`,
+  };
+
+  let persisted = false;
+  if (CATALOG_WRITABLE) {
+    try {
+      appendLessonToCatalog(courseRow, lesson);
+      persisted = true;
+    } catch (error) {
+      console.error('[owner] could not persist lesson:', error.message);
+    }
+  }
+
+  const downloadable = lessonDownloadability({ ...lesson, sourceUrl: body.sourceUrl });
+  console.log(
+    `[owner] ${tenantId}/${courseId} lesson "${lesson.title}" added (${videoId}) ` +
+      `${persisted ? 'persisted' : 'accepted, persistence off'} ` +
+      `${downloadable ? 'downloadable' : 'stream-only'}`,
+  );
+
+  return res.status(201).json({
+    ok: true,
+    lesson,
+    courseId,
+    persisted,
+    downloadable,
+    note: downloadable
+      ? 'Students can watch online and save it for offline viewing.'
+      : 'Students can stream it now. Offline saving unlocks once the lesson has a video file (or ENABLE_YTDLP resolves it).',
+  });
+});
 
 app.get('/api/health', (req, res) => {
   res.json({
