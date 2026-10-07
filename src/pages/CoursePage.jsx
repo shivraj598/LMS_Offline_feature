@@ -39,19 +39,9 @@ function LessonRow({ lesson, course, index, onWatch }) {
   const hasVideo = Boolean(lesson.sourceUrl || lesson.youtubeUrl)
   const colors = subjectStyle(course.subject)
 
-  const handleKeyDown = (event) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault()
-      onWatch(lesson)
-    }
-  }
-
   return (
     <div
-      role="button"
-      tabIndex={0}
       onClick={() => onWatch(lesson)}
-      onKeyDown={handleKeyDown}
       className={cn(
         'w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-200 cursor-pointer',
         'hover:bg-surface-hover hover:border-primary/30 border border-transparent',
@@ -87,7 +77,13 @@ function LessonRow({ lesson, course, index, onWatch }) {
           )}
         </div>
         <h4 className="font-medium text-foreground line-clamp-1">
-          {index + 1}. {lesson.title}
+          <Link
+            to={`/watch/${course.id}/${lesson.id}`}
+            className="hover:text-primary transition-colors"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {index + 1}. {lesson.title}
+          </Link>
         </h4>
         <div className="flex items-center gap-3 mt-1 text-xs text-foreground-muted">
           <span className="flex items-center gap-1">
