@@ -112,7 +112,7 @@ export function CourseCard({ course, index = 0 }) {
           ) : (
             <Button size="sm" className="flex-1" onClick={() => saveCourseOffline(course)}>
               <Download className="h-4 w-4" />
-              Save all offline
+              Save All Offline
             </Button>
           )}
         </div>
