@@ -232,8 +232,7 @@ src/lib/
   storage.js                 quota estimate, persist(), cap/budget checks
   net.js                     offline-aware fetch + simulated-offline switch
   youtube.js  router.js  format.js     small pure helpers
-src/components/              Header, LessonRow, DownloadButton, DownloadedBadge,
-                             LessonPlayer, DownloadTray, StorageMeter, Notices, …
+src/components/              Layout (shell), CourseCard, plus ui/ primitives
 src/pages/                   Courses, Course, Watch, Downloads, Settings,
                              OwnerStudio (paste YouTube URL -> lesson)
 src/state/AppContext.jsx     tenant + catalog + one download store for the app
